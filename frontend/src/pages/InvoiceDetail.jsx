@@ -19,6 +19,12 @@ export default function InvoiceDetail() {
     queryFn: () => api.get(`/invoices/${id}`).then(r => r.data.data)
   });
 
+  const { data: qrData } = useQuery({
+    queryKey: ['invoice-qr', id],
+    queryFn: () => api.get(`/invoices/${id}/qr`).then((r) => r.data.data),
+    enabled: Boolean(id)
+  });
+
   const sendMutation = useMutation({
     mutationFn: () => api.post(`/invoices/${id}/send`),
     onSuccess: () => { queryClient.invalidateQueries(['invoice', id]); toast.success('Invoice sent!'); }
@@ -195,6 +201,16 @@ export default function InvoiceDetail() {
                 <p className="text-sm text-gray-600">{invoice.terms}</p>
               </div>
             )}
+          </div>
+        )}
+
+        {qrData?.qrCode && (
+          <div className="pt-6 mt-6 border-t flex items-center justify-between flex-wrap gap-4">
+            <div>
+              <p className="text-xs font-semibold text-gray-400 uppercase mb-1">Invoice QR</p>
+              <p className="text-sm text-gray-600">Use this for quick verification and payment reference.</p>
+            </div>
+            <img src={qrData.qrCode} alt="Invoice QR code" className="w-24 h-24 rounded-lg border border-gray-200 bg-white p-1" />
           </div>
         )}
       </div>

@@ -3,6 +3,7 @@ const Invoice = require('../models/Invoice');
 const User = require('../models/User');
 const Client = require('../models/Client');
 const { sendDueReminderEmail } = require('../utils/emailService');
+const { decryptText } = require('../utils/encryption');
 
 let jobsStarted = false;
 
@@ -13,14 +14,16 @@ const runDueReminders = async () => {
 
   const candidates = await Invoice.find({
     status: { $in: ['sent', 'viewed'] },
+    reminderEnabled: true,
     dueDate: { $gte: reminderDateStart, $lt: reminderDateEnd },
     reminderSentAt: { $exists: false }
   }).populate('client').populate('user');
 
   for (const invoice of candidates) {
-    if (!invoice.client?.email) continue;
+    const recipientEmail = decryptText(invoice.client?.email);
+    if (!recipientEmail) continue;
     await sendDueReminderEmail({
-      to: invoice.client.email,
+      to: recipientEmail,
       clientName: invoice.client.name,
       invoiceNumber: invoice.invoiceNumber,
       dueDate: invoice.dueDate,

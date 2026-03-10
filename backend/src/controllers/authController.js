@@ -50,8 +50,13 @@ exports.login = async (req, res) => {
     }
 
     const user = await User.findOne({ email }).select('+password');
-    if (!user || !(await user.comparePassword(password))) {
-      return res.status(401).json({ success: false, message: 'Invalid email or password' });
+    if (!user) {
+      return res.status(401).json({ success: false, message: 'Email does not exist' });
+    }
+
+    const validPassword = await user.comparePassword(password);
+    if (!validPassword) {
+      return res.status(401).json({ success: false, message: 'Wrong password' });
     }
 
     sendTokenResponse(user, 200, res);

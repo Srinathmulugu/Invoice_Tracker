@@ -39,6 +39,7 @@ const InvoiceSchema = new mongoose.Schema({
   suspicious: { type: Boolean, default: false },
   riskScore: { type: Number, default: 0 },
   reminderSentAt: { type: Date },
+  reminderEnabled: { type: Boolean, default: true },
   recurring: {
     enabled: { type: Boolean, default: false },
     frequency: { type: String, enum: ['weekly', 'monthly', 'yearly'], default: 'monthly' },

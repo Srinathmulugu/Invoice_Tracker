@@ -17,6 +17,7 @@ export default function InvoiceForm() {
   const isEdit = Boolean(id);
 
   const [form, setForm] = useState({
+    invoiceNumber: '',
     clientId: '',
     dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
     issueDate: new Date().toISOString().split('T')[0],
@@ -25,6 +26,8 @@ export default function InvoiceForm() {
     notes: '',
     terms: user?.paymentTerms || 'Net 30',
     currency: user?.currency || 'USD',
+    reminderEnabled: true,
+    recurring: { enabled: false, frequency: 'monthly' },
     lineItems: [emptyItem()]
   });
 
@@ -42,6 +45,7 @@ export default function InvoiceForm() {
   useEffect(() => {
     if (existingInvoice) {
       setForm({
+        invoiceNumber: existingInvoice.invoiceNumber || '',
         clientId: existingInvoice.client._id,
         dueDate: existingInvoice.dueDate.split('T')[0],
         issueDate: existingInvoice.issueDate.split('T')[0],
@@ -50,10 +54,24 @@ export default function InvoiceForm() {
         notes: existingInvoice.notes || '',
         terms: existingInvoice.terms || '',
         currency: existingInvoice.currency,
+        reminderEnabled: existingInvoice.reminderEnabled !== false,
+        recurring: {
+          enabled: Boolean(existingInvoice.recurring?.enabled),
+          frequency: existingInvoice.recurring?.frequency || 'monthly'
+        },
         lineItems: existingInvoice.lineItems
       });
     }
   }, [existingInvoice]);
+
+  const { data: duplicateCheck, isFetching: checkingDuplicate } = useQuery({
+    queryKey: ['invoice-duplicate-check', form.invoiceNumber, id],
+    queryFn: () => api.get('/invoices/check-duplicate', {
+      params: { invoiceNumber: form.invoiceNumber.trim(), excludeId: id }
+    }).then((r) => r.data),
+    enabled: Boolean(form.invoiceNumber?.trim()),
+    retry: false
+  });
 
   const saveMutation = useMutation({
     mutationFn: (data) => isEdit ? api.put(`/invoices/${id}`, data) : api.post('/invoices', data),
@@ -81,6 +99,7 @@ export default function InvoiceForm() {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!form.clientId) return toast.error('Please select a client');
+    if (duplicateCheck?.duplicate) return toast.error('Duplicate Invoice Warning: this invoice number already exists');
     saveMutation.mutate(form);
   };
 
@@ -103,6 +122,20 @@ export default function InvoiceForm() {
               </select>
             </div>
             <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Invoice Number (optional)</label>
+              <input className="input" placeholder="Auto-generated if empty" value={form.invoiceNumber}
+                onChange={e => setForm(f => ({ ...f, invoiceNumber: e.target.value }))} />
+              {form.invoiceNumber?.trim() && (
+                <p className={`text-xs mt-1 ${duplicateCheck?.duplicate ? 'text-red-600' : 'text-teal-700'}`}>
+                  {checkingDuplicate
+                    ? 'Checking duplicate...'
+                    : duplicateCheck?.duplicate
+                      ? 'Duplicate Invoice Warning: this number already exists'
+                      : 'Invoice number is available'}
+                </p>
+              )}
+            </div>
+            <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Currency</label>
               <select className="input" value={form.currency} onChange={e => setForm(f => ({ ...f, currency: e.target.value }))}>
                 {['USD', 'EUR', 'GBP', 'CAD', 'AUD', 'INR'].map(c => <option key={c}>{c}</option>)}
@@ -116,6 +149,39 @@ export default function InvoiceForm() {
               <label className="block text-sm font-medium text-gray-700 mb-1">Due Date *</label>
               <input type="date" className="input" value={form.dueDate} onChange={e => setForm(f => ({ ...f, dueDate: e.target.value }))} required />
             </div>
+          </div>
+        </div>
+
+        <div className="card">
+          <h2 className="font-semibold text-gray-900 mb-4">Automation</h2>
+          <div className="space-y-4">
+            <label className="flex items-center gap-3 text-sm font-medium text-gray-700">
+              <input
+                type="checkbox"
+                checked={form.reminderEnabled}
+                onChange={e => setForm(f => ({ ...f, reminderEnabled: e.target.checked }))}
+              />
+              Enable auto payment reminder (3 days before due date)
+            </label>
+            <label className="flex items-center gap-3 text-sm font-medium text-gray-700">
+              <input
+                type="checkbox"
+                checked={form.recurring.enabled}
+                onChange={e => setForm(f => ({ ...f, recurring: { ...f.recurring, enabled: e.target.checked } }))}
+              />
+              Make this a recurring invoice
+            </label>
+            {form.recurring.enabled && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Recurring Frequency</label>
+                <select className="input max-w-xs" value={form.recurring.frequency}
+                  onChange={e => setForm(f => ({ ...f, recurring: { ...f.recurring, frequency: e.target.value } }))}>
+                  <option value="weekly">Weekly</option>
+                  <option value="monthly">Monthly</option>
+                  <option value="yearly">Yearly</option>
+                </select>
+              </div>
+            )}
           </div>
         </div>
 

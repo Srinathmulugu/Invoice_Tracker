@@ -44,16 +44,16 @@ export default function Auth() {
           <h2 className="text-2xl font-bold text-gray-900 mb-6">
             {isLogin ? 'Welcome back' : 'Create account'}
           </h2>
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4" autoComplete="off">
             {!isLogin && (
               <>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-                  <input className="input" required value={form.name} onChange={set('name')} placeholder="John Doe" />
+                  <input className="input" required value={form.name} onChange={set('name')} placeholder="John Doe" autoComplete="name" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Business Name (optional)</label>
-                  <input className="input" value={form.businessName} onChange={set('businessName')} placeholder="Acme Freelancing" />
+                  <input className="input" value={form.businessName} onChange={set('businessName')} placeholder="Acme Freelancing" autoComplete="organization" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
@@ -67,11 +67,11 @@ export default function Auth() {
             )}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-              <input type="email" className="input" required value={form.email} onChange={set('email')} placeholder="you@example.com" />
+              <input type="email" className="input" required value={form.email} onChange={set('email')} placeholder="you@example.com" autoComplete="username" />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
-              <input type="password" className="input" required minLength={6} value={form.password} onChange={set('password')} placeholder="Min 6 characters" />
+              <input type="password" className="input" required minLength={6} value={form.password} onChange={set('password')} placeholder="Min 6 characters" autoComplete={isLogin ? 'current-password' : 'new-password'} />
             </div>
             <button type="submit" className="btn-primary w-full py-3 mt-2" disabled={loading}>
               {loading ? 'Please wait...' : (isLogin ? 'Sign In' : 'Create Account')}

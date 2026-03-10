@@ -190,6 +190,7 @@ exports.createInvoice = async (req, res) => {
       suspicious,
       riskScore,
       duplicateWarning: false,
+      reminderEnabled: req.body.reminderEnabled !== false,
       recurring: {
         enabled: Boolean(recurring?.enabled),
         frequency: recurring?.frequency || 'monthly',
@@ -250,6 +251,7 @@ exports.updateInvoice = async (req, res) => {
     if (req.body.paymentNotes !== undefined) req.body.paymentNotes = encryptText(req.body.paymentNotes);
     if (req.body.bankInfo !== undefined) req.body.bankInfo = encryptText(req.body.bankInfo);
     if (req.body.paymentDetails !== undefined) req.body.paymentDetails = encryptText(req.body.paymentDetails);
+    if (req.body.reminderEnabled !== undefined) req.body.reminderEnabled = Boolean(req.body.reminderEnabled);
 
     const updated = await Invoice.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true })
       .populate('client', 'name email company');
@@ -285,10 +287,15 @@ exports.sendInvoice = async (req, res) => {
 
     if (!invoice) return res.status(404).json({ success: false, message: 'Invoice not found' });
 
+    const recipientEmail = decryptText(invoice.client.email);
+    if (!recipientEmail) {
+      return res.status(400).json({ success: false, message: 'Client email is missing' });
+    }
+
     const pdfBuffer = await generateInvoicePDF(invoice, invoice.client, invoice.user);
 
     await sendInvoiceEmail({
-      to: invoice.client.email,
+      to: recipientEmail,
       clientName: invoice.client.name,
       invoiceNumber: invoice.invoiceNumber,
       total: invoice.total,
