@@ -155,7 +155,7 @@ export default function InvoiceForm() {
               </div>
             ))}
             <button type="button" onClick={() => setForm(f => ({ ...f, lineItems: [...f.lineItems, emptyItem()] }))}
-              className="flex items-center gap-2 text-sm text-indigo-600 hover:text-indigo-700 font-medium mt-2">
+              className="flex items-center gap-2 text-sm text-teal-600 hover:text-teal-700 font-medium mt-2">
               <Plus size={16} /> Add Line Item
             </button>
           </div>
@@ -185,7 +185,7 @@ export default function InvoiceForm() {
               </div>
               <div className="flex justify-between text-base font-bold border-t pt-2">
                 <span>Total</span>
-                <span className="text-indigo-600">{formatCurrency(total, form.currency)}</span>
+                <span className="text-teal-600">{formatCurrency(total, form.currency)}</span>
               </div>
             </div>
           </div>

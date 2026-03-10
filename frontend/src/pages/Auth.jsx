@@ -32,7 +32,7 @@ export default function Auth() {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="inline-flex items-center gap-3 mb-4">
-            <div className="w-12 h-12 bg-indigo-500 rounded-xl flex items-center justify-center">
+            <div className="w-12 h-12 bg-teal-500 rounded-xl flex items-center justify-center">
               <FileText size={24} className="text-white" />
             </div>
             <span className="text-white text-2xl font-bold">InvoiceFlow</span>
@@ -72,7 +72,7 @@ export default function Auth() {
           <div className="mt-6 text-center">
             <p className="text-gray-500 text-sm">
               {isLogin ? "Don't have an account? " : "Already have an account? "}
-              <button onClick={() => setIsLogin(!isLogin)} className="text-indigo-600 font-medium hover:underline">
+              <button onClick={() => setIsLogin(!isLogin)} className="text-teal-600 font-medium hover:underline">
                 {isLogin ? 'Sign up free' : 'Sign in'}
               </button>
             </p>

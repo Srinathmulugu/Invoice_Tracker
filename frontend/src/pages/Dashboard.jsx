@@ -32,7 +32,7 @@ export default function Dashboard() {
 
   if (isLoading) return (
     <div className="flex justify-center items-center min-h-screen">
-      <div className="animate-spin w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full" />
+      <div className="animate-spin w-8 h-8 border-4 border-teal-600 border-t-transparent rounded-full" />
     </div>
   );
 
@@ -63,7 +63,7 @@ export default function Dashboard() {
           subtitle={revenueChange ? `${revenueChange > 0 ? '+' : ''}${revenueChange}% vs last month` : ''}
           icon={CheckCircle} color="bg-green-500" />
         <StatCard title="Total Clients" value={data?.totalClients || 0} subtitle="Active clients"
-          icon={FileText} color="bg-indigo-500" onClick={() => navigate('/clients')} />
+          icon={FileText} color="bg-teal-500" onClick={() => navigate('/clients')} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -109,7 +109,7 @@ export default function Dashboard() {
         <div className="card">
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-semibold text-gray-900">Recent Invoices</h2>
-            <button onClick={() => navigate('/invoices')} className="text-sm text-indigo-600 hover:underline">View all</button>
+            <button onClick={() => navigate('/invoices')} className="text-sm text-teal-600 hover:underline">View all</button>
           </div>
           <div className="space-y-3">
             {data?.recentInvoices?.length > 0 ? data.recentInvoices.map(inv => (

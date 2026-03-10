@@ -73,7 +73,7 @@ export default function Invoices() {
               <button key={s}
                 onClick={() => { setSearchParams(s !== 'all' ? { status: s } : {}); setPage(1); }}
                 className={`px-3 py-1.5 rounded-lg text-sm font-medium capitalize transition-colors ${
-                  status === s ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  status === s ? 'bg-teal-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                 }`}>
                 {s}
               </button>
@@ -84,7 +84,7 @@ export default function Invoices() {
 
       <div className="card p-0 overflow-hidden">
         {isLoading ? (
-          <div className="flex justify-center py-12"><div className="animate-spin w-6 h-6 border-4 border-indigo-600 border-t-transparent rounded-full" /></div>
+          <div className="flex justify-center py-12"><div className="animate-spin w-6 h-6 border-4 border-teal-600 border-t-transparent rounded-full" /></div>
         ) : data?.data?.length === 0 ? (
           <div className="text-center py-16">
             <p className="text-gray-400 mb-4">No invoices found</p>
@@ -104,7 +104,7 @@ export default function Invoices() {
                 <tr key={invoice._id} className="hover:bg-gray-50 transition-colors">
                   <td className="px-6 py-4">
                     <button onClick={() => navigate(`/invoices/${invoice._id}`)}
-                      className="font-medium text-indigo-600 hover:underline">{invoice.invoiceNumber}</button>
+                      className="font-medium text-teal-600 hover:underline">{invoice.invoiceNumber}</button>
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-900">{invoice.client?.name || '-'}</td>
                   <td className="px-6 py-4 text-sm text-gray-500">{formatDate(invoice.issueDate)}</td>
@@ -115,8 +115,8 @@ export default function Invoices() {
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
-                      <button onClick={() => navigate(`/invoices/${invoice._id}`)} className="text-gray-400 hover:text-indigo-600"><Eye size={16} /></button>
-                      <button onClick={() => handleDownloadPDF(invoice._id, invoice.invoiceNumber)} className="text-gray-400 hover:text-indigo-600"><Download size={16} /></button>
+                      <button onClick={() => navigate(`/invoices/${invoice._id}`)} className="text-gray-400 hover:text-teal-600"><Eye size={16} /></button>
+                      <button onClick={() => handleDownloadPDF(invoice._id, invoice.invoiceNumber)} className="text-gray-400 hover:text-teal-600"><Download size={16} /></button>
                       {(invoice.status === 'draft' || invoice.status === 'sent') && (
                         <button onClick={() => sendMutation.mutate(invoice._id)} className="text-gray-400 hover:text-blue-600"><Send size={16} /></button>
                       )}
@@ -139,7 +139,7 @@ export default function Invoices() {
           <div className="flex justify-center gap-2 p-4 border-t">
             {Array.from({ length: data.pages }, (_, i) => (
               <button key={i} onClick={() => setPage(i + 1)}
-                className={`px-3 py-1 rounded text-sm ${page === i + 1 ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-600'}`}>
+                className={`px-3 py-1 rounded text-sm ${page === i + 1 ? 'bg-teal-600 text-white' : 'bg-gray-100 text-gray-600'}`}>
                 {i + 1}
               </button>
             ))}

@@ -49,15 +49,12 @@ export default function App() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <BrowserRouter>
-          <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 9999, color: '#10b981', fontSize: 12, padding: 4, fontFamily: 'system-ui' }}>
-            InvoiceFlow frontend running (if you see this, React is mounted).
-          </div>
           <ErrorBoundary>
             <AppRoutes />
           </ErrorBoundary>
           <Toaster position='top-right' toastOptions={{
             duration: 3000,
-            style: { borderRadius: '10px', background: '#1f2937', color: '#fff' }
+            style: { borderRadius: '12px', background: '#0f172a', color: '#ecfeff', border: '1px solid #164e63' }
           }} />
         </BrowserRouter>
       </AuthProvider>

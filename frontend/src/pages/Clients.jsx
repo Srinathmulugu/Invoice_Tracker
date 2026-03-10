@@ -96,7 +96,7 @@ export default function Clients() {
       </div>
 
       {isLoading ? (
-        <div className="flex justify-center py-12"><div className="animate-spin w-6 h-6 border-4 border-indigo-600 border-t-transparent rounded-full" /></div>
+        <div className="flex justify-center py-12"><div className="animate-spin w-6 h-6 border-4 border-teal-600 border-t-transparent rounded-full" /></div>
       ) : data?.data?.length === 0 ? (
         <div className="card text-center py-16">
           <p className="text-gray-400 mb-4">No clients yet</p>
@@ -108,7 +108,7 @@ export default function Clients() {
             <div key={client._id} className="card hover:shadow-md transition-shadow">
               <div className="flex items-start justify-between mb-3">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 font-bold">
+                  <div className="w-10 h-10 bg-teal-100 rounded-full flex items-center justify-center text-teal-600 font-bold">
                     {client.name[0].toUpperCase()}
                   </div>
                   <div>
@@ -127,7 +127,7 @@ export default function Clients() {
                 <div><p className="text-xs text-gray-400">Invoiced</p><p className="text-sm font-medium">{formatCurrency(client.totalInvoiced)}</p></div>
                 <div><p className="text-xs text-gray-400">Paid</p><p className="text-sm font-medium text-green-600">{formatCurrency(client.totalPaid)}</p></div>
               </div>
-              <button onClick={() => navigate('/invoices/new')} className="w-full mt-3 text-sm text-indigo-600 hover:text-indigo-700 font-medium">
+              <button onClick={() => navigate('/invoices/new')} className="w-full mt-3 text-sm text-teal-600 hover:text-teal-700 font-medium">
                 + New Invoice
               </button>
             </div>

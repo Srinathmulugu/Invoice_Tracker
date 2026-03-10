@@ -44,7 +44,7 @@ export default function InvoiceDetail() {
 
   if (isLoading) return (
     <div className="flex justify-center py-24">
-      <div className="animate-spin w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full" />
+      <div className="animate-spin w-8 h-8 border-4 border-teal-600 border-t-transparent rounded-full" />
     </div>
   );
   if (!invoice) return <div className="p-8 text-center text-gray-500">Invoice not found</div>;
@@ -83,7 +83,7 @@ export default function InvoiceDetail() {
         {/* Header */}
         <div className="flex justify-between items-start pb-8 border-b mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-indigo-600">{user?.businessName || user?.name}</h1>
+            <h1 className="text-3xl font-bold text-teal-600">{user?.businessName || user?.name}</h1>
             {user?.businessAddress && <p className="text-gray-500 mt-1 text-sm">{user.businessAddress}</p>}
             <p className="text-gray-500 text-sm">{user?.email}</p>
           </div>
@@ -130,7 +130,7 @@ export default function InvoiceDetail() {
         {/* Line Items */}
         <table className="w-full mb-8">
           <thead>
-            <tr className="bg-indigo-600 text-white">
+            <tr className="bg-teal-600 text-white">
               <th className="text-left p-3 rounded-tl-lg text-sm">Description</th>
               <th className="text-right p-3 text-sm">Qty</th>
               <th className="text-right p-3 text-sm">Rate</th>
@@ -170,7 +170,7 @@ export default function InvoiceDetail() {
             )}
             <div className="flex justify-between font-bold text-lg border-t pt-2">
               <span>Total</span>
-              <span className="text-indigo-600">{formatCurrency(invoice.total, invoice.currency)}</span>
+              <span className="text-teal-600">{formatCurrency(invoice.total, invoice.currency)}</span>
             </div>
           </div>
         </div>
