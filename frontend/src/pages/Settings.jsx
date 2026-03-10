@@ -16,10 +16,25 @@ export default function Settings() {
     paymentTerms: user?.paymentTerms || 'Net 30',
     invoicePrefix: user?.invoicePrefix || 'INV'
   });
+  const [aiQuestion, setAiQuestion] = useState('Which client has highest unpaid invoices?');
+  const [aiAnswer, setAiAnswer] = useState('');
 
   const updateMutation = useMutation({
     mutationFn: (data) => api.put('/auth/profile', data),
     onSuccess: (res) => { updateUser(res.data.user); toast.success('Settings saved!'); }
+  });
+
+  const aiMutation = useMutation({
+    mutationFn: (question) => api.get('/dashboard/insights', { params: { question } }),
+    onSuccess: (res) => setAiAnswer(res.data?.data?.answer || 'No insight available')
+  });
+
+  const backupMutation = useMutation({
+    mutationFn: () => api.post('/dashboard/backup', {}),
+    onSuccess: (res) => {
+      toast.success(`Backup created: ${res.data?.data?.filePath || 'success'}`);
+    },
+    onError: (e) => toast.error(e.response?.data?.message || 'Backup failed')
   });
 
   const set = (field) => (e) => setForm(f => ({ ...f, [field]: e.target.value }));
@@ -90,6 +105,30 @@ export default function Settings() {
         <div className="flex justify-end">
           <button type="submit" className="btn-primary" disabled={updateMutation.isPending}>
             {updateMutation.isPending ? 'Saving...' : 'Save Settings'}
+          </button>
+        </div>
+
+        <div className="card">
+          <h2 className="font-semibold text-gray-900 mb-4">AI Insights</h2>
+          <div className="flex flex-col md:flex-row gap-3">
+            <input className="input" value={aiQuestion} onChange={(e) => setAiQuestion(e.target.value)} />
+            <button
+              type="button"
+              className="btn-secondary"
+              disabled={aiMutation.isPending}
+              onClick={() => aiMutation.mutate(aiQuestion)}
+            >
+              {aiMutation.isPending ? 'Analyzing...' : 'Ask AI'}
+            </button>
+          </div>
+          {aiAnswer && <p className="text-sm text-gray-700 mt-3">{aiAnswer}</p>}
+        </div>
+
+        <div className="card">
+          <h2 className="font-semibold text-gray-900 mb-4">Cloud Backup</h2>
+          <p className="text-sm text-gray-600 mb-3">Create a snapshot backup of your clients and invoices.</p>
+          <button type="button" className="btn-secondary" disabled={backupMutation.isPending} onClick={() => backupMutation.mutate()}>
+            {backupMutation.isPending ? 'Backing up...' : 'Create Backup'}
           </button>
         </div>
       </form>

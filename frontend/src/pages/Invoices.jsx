@@ -15,16 +15,36 @@ export default function Invoices() {
   const [searchParams, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+  const [minAmount, setMinAmount] = useState('');
+  const [maxAmount, setMaxAmount] = useState('');
+  const [clientFilter, setClientFilter] = useState('');
   const status = searchParams.get('status') || 'all';
   const [page, setPage] = useState(1);
   const canManage = ['admin', 'accountant'].includes(user?.role);
   const canDelete = user?.role === 'admin';
 
   const { data, isLoading } = useQuery({
-    queryKey: ['invoices', status, page, search],
+    queryKey: ['invoices', status, page, search, dateFrom, dateTo, minAmount, maxAmount, clientFilter],
     queryFn: () => api.get('/invoices', {
-      params: { status: status !== 'all' ? status : undefined, page, limit: 10, search: search || undefined }
+      params: {
+        status: status !== 'all' ? status : undefined,
+        page,
+        limit: 10,
+        search: search || undefined,
+        dateFrom: dateFrom || undefined,
+        dateTo: dateTo || undefined,
+        minAmount: minAmount || undefined,
+        maxAmount: maxAmount || undefined,
+        client: clientFilter || undefined
+      }
     }).then(r => r.data)
+  });
+
+  const { data: clients } = useQuery({
+    queryKey: ['clients-all-for-filters'],
+    queryFn: () => api.get('/clients', { params: { limit: 200 } }).then((r) => r.data.data)
   });
 
   const deleteMutation = useMutation({
@@ -56,20 +76,39 @@ export default function Invoices() {
     } catch { toast.error('Failed to download PDF'); }
   };
 
+  const exportFile = async (type) => {
+    try {
+      const response = await api.get(`/invoices/export/${type}`, { responseType: 'blob' });
+      const url = URL.createObjectURL(new Blob([response.data]));
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `invoices.${type === 'excel' ? 'xlsx' : 'csv'}`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success(`Exported ${type.toUpperCase()} successfully`);
+    } catch {
+      toast.error(`Failed to export ${type.toUpperCase()}`);
+    }
+  };
+
   return (
     <div className="p-8">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Invoices</h1>
-        <button onClick={() => navigate('/invoices/new')} className="btn-primary flex items-center gap-2" disabled={!canManage}>
-          <Plus size={18} /> New Invoice
-        </button>
+        <div className="flex items-center gap-2">
+          <button onClick={() => exportFile('csv')} className="btn-secondary text-sm" disabled={!canManage}>Export CSV</button>
+          <button onClick={() => exportFile('excel')} className="btn-secondary text-sm" disabled={!canManage}>Export Excel</button>
+          <button onClick={() => navigate('/invoices/new')} className="btn-primary flex items-center gap-2" disabled={!canManage}>
+            <Plus size={18} /> New Invoice
+          </button>
+        </div>
       </div>
 
       <div className="card mb-6">
         <div className="flex flex-col sm:flex-row gap-4">
           <div className="relative flex-1">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-            <input className="input pl-9" placeholder="Search invoice number..."
+            <input className="input pl-9" placeholder="Search invoice or client..."
               value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} />
           </div>
           <div className="flex gap-2 flex-wrap">
@@ -82,6 +121,33 @@ export default function Invoices() {
                 {s}
               </button>
             ))}
+          </div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-3 mt-4">
+          <select className="input" value={clientFilter} onChange={e => { setClientFilter(e.target.value); setPage(1); }}>
+            <option value="">All clients</option>
+            {clients?.map((c) => <option key={c._id} value={c._id}>{c.name}</option>)}
+          </select>
+          <input type="date" className="input" value={dateFrom} onChange={e => { setDateFrom(e.target.value); setPage(1); }} />
+          <input type="date" className="input" value={dateTo} onChange={e => { setDateTo(e.target.value); setPage(1); }} />
+          <input type="number" className="input" placeholder="Min amount" value={minAmount} onChange={e => { setMinAmount(e.target.value); setPage(1); }} />
+          <div className="flex gap-2">
+            <input type="number" className="input" placeholder="Max amount" value={maxAmount} onChange={e => { setMaxAmount(e.target.value); setPage(1); }} />
+            <button
+              type="button"
+              className="btn-secondary whitespace-nowrap"
+              onClick={() => {
+                setSearch('');
+                setDateFrom('');
+                setDateTo('');
+                setMinAmount('');
+                setMaxAmount('');
+                setClientFilter('');
+                setPage(1);
+              }}
+            >
+              Clear
+            </button>
           </div>
         </div>
       </div>

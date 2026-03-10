@@ -30,6 +30,7 @@ export default function InvoiceForm() {
     recurring: { enabled: false, frequency: 'monthly' },
     lineItems: [emptyItem()]
   });
+  const [ocrFile, setOcrFile] = useState(null);
 
   const { data: clients } = useQuery({
     queryKey: ['clients-all'],
@@ -83,6 +84,28 @@ export default function InvoiceForm() {
     onError: (e) => toast.error(e.response?.data?.message || 'Failed to save')
   });
 
+  const ocrMutation = useMutation({
+    mutationFn: async (file) => {
+      const body = new FormData();
+      body.append('file', file);
+      return api.post('/invoices/ocr/scan', body, { headers: { 'Content-Type': 'multipart/form-data' } });
+    },
+    onSuccess: (res) => {
+      const parsed = res.data?.data;
+      setForm((f) => ({
+        ...f,
+        invoiceNumber: parsed?.invoiceNumber || f.invoiceNumber,
+        issueDate: parsed?.date ? new Date(parsed.date).toISOString().slice(0, 10) : f.issueDate,
+        notes: parsed?.gstNumber ? `${f.notes ? `${f.notes}\n` : ''}GST: ${parsed.gstNumber}` : f.notes,
+        lineItems: parsed?.amount > 0
+          ? [{ description: 'OCR imported amount', quantity: 1, rate: parsed.amount, amount: parsed.amount }]
+          : f.lineItems
+      }));
+      toast.success('OCR data extracted');
+    },
+    onError: () => toast.error('OCR extraction failed')
+  });
+
   const updateItem = (idx, field, value) => {
     const items = [...form.lineItems];
     items[idx] = { ...items[idx], [field]: value };
@@ -111,6 +134,22 @@ export default function InvoiceForm() {
       <h1 className="text-2xl font-bold text-gray-900 mb-8">{isEdit ? 'Edit Invoice' : 'New Invoice'}</h1>
 
       <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="card">
+          <h2 className="font-semibold text-gray-900 mb-4">Invoice Scanner (OCR)</h2>
+          <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+            <input type="file" accept="image/*" onChange={(e) => setOcrFile(e.target.files?.[0] || null)} className="input max-w-md" />
+            <button
+              type="button"
+              className="btn-secondary"
+              disabled={!ocrFile || ocrMutation.isPending}
+              onClick={() => ocrMutation.mutate(ocrFile)}
+            >
+              {ocrMutation.isPending ? 'Scanning...' : 'Scan Invoice'}
+            </button>
+          </div>
+          <p className="text-xs text-gray-500 mt-2">Extracts invoice number, date, GST and total amount from image.</p>
+        </div>
+
         <div className="card">
           <h2 className="font-semibold text-gray-900 mb-4">Invoice Details</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

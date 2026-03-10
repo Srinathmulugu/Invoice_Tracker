@@ -73,12 +73,48 @@ exports.checkDuplicateInvoice = async (req, res) => {
 
 exports.getInvoices = async (req, res) => {
   try {
-    const { status, client, page = 1, limit = 10, sort = '-createdAt', search } = req.query;
+    const {
+      status,
+      client,
+      page = 1,
+      limit = 10,
+      sort = '-createdAt',
+      search,
+      dateFrom,
+      dateTo,
+      minAmount,
+      maxAmount
+    } = req.query;
     const query = { user: req.user._id };
 
     if (status) query.status = status;
     if (client) query.client = client;
-    if (search) query.invoiceNumber = { $regex: search, $options: 'i' };
+    if (dateFrom || dateTo) {
+      query.issueDate = {
+        ...(dateFrom ? { $gte: new Date(dateFrom) } : {}),
+        ...(dateTo ? { $lte: new Date(`${dateTo}T23:59:59.999Z`) } : {})
+      };
+    }
+    if (minAmount || maxAmount) {
+      query.total = {
+        ...(minAmount ? { $gte: Number(minAmount) } : {}),
+        ...(maxAmount ? { $lte: Number(maxAmount) } : {})
+      };
+    }
+
+    if (search) {
+      const matchingClients = await Client.find({
+        user: req.user._id,
+        $or: [
+          { name: { $regex: search, $options: 'i' } },
+          { company: { $regex: search, $options: 'i' } }
+        ]
+      }).select('_id');
+
+      const clientIds = matchingClients.map((c) => c._id);
+      query.$or = [{ invoiceNumber: { $regex: search, $options: 'i' } }];
+      if (clientIds.length > 0) query.$or.push({ client: { $in: clientIds } });
+    }
 
     await Invoice.updateMany(
       { user: req.user._id, status: { $in: ['sent', 'viewed'] }, dueDate: { $lt: new Date() } },
