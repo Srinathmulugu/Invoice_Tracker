@@ -1,4 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom';
+import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../context/AuthContext';
 import api from '../utils/api';
@@ -13,6 +14,8 @@ export default function InvoiceDetail() {
   const queryClient = useQueryClient();
   const canManage = ['admin', 'accountant'].includes(user?.role);
   const canDelete = user?.role === 'admin';
+  const [paymentProvider, setPaymentProvider] = useState('upi');
+  const [paymentLink, setPaymentLink] = useState('');
 
   const { data: invoice, isLoading } = useQuery({
     queryKey: ['invoice', id],
@@ -38,6 +41,19 @@ export default function InvoiceDetail() {
   const deleteMutation = useMutation({
     mutationFn: () => api.delete(`/invoices/${id}`),
     onSuccess: () => { toast.success('Deleted'); navigate('/invoices'); }
+  });
+
+  const paymentLinkMutation = useMutation({
+    mutationFn: () => api.post(`/invoices/${id}/payment-link`, { provider: paymentProvider }),
+    onSuccess: (res) => {
+      const link = res.data?.data?.paymentUrl || '';
+      setPaymentLink(link);
+      if (link) {
+        navigator.clipboard?.writeText(link);
+        toast.success('Payment link generated and copied');
+      }
+    },
+    onError: () => toast.error('Failed to generate payment link')
   });
 
   const handleDownloadPDF = async () => {
@@ -201,6 +217,28 @@ export default function InvoiceDetail() {
                 <p className="text-sm text-gray-600">{invoice.terms}</p>
               </div>
             )}
+          </div>
+        )}
+
+        {invoice.status !== 'paid' && invoice.status !== 'cancelled' && (
+          <div className="pt-6 mt-6 border-t">
+            <p className="text-xs font-semibold text-gray-400 uppercase mb-2">Collect Payment</p>
+            <div className="flex flex-wrap items-center gap-2">
+              <select className="input max-w-[180px]" value={paymentProvider} onChange={(e) => setPaymentProvider(e.target.value)}>
+                <option value="upi">UPI</option>
+                <option value="razorpay">Razorpay</option>
+                <option value="phonepe">PhonePe</option>
+              </select>
+              <button type="button" className="btn-secondary" onClick={() => paymentLinkMutation.mutate()} disabled={paymentLinkMutation.isPending}>
+                {paymentLinkMutation.isPending ? 'Generating...' : 'Generate Payment Link'}
+              </button>
+              {paymentLink && (
+                <button type="button" className="btn-secondary" onClick={() => window.open(paymentLink, '_blank', 'noopener,noreferrer')}>
+                  Open Link
+                </button>
+              )}
+            </div>
+            {paymentLink && <p className="text-xs text-gray-600 mt-2 break-all">{paymentLink}</p>}
           </div>
         )}
 

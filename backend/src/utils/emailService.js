@@ -7,7 +7,7 @@ const createTransporter = () => nodemailer.createTransport({
   auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS }
 });
 
-exports.sendInvoiceEmail = async ({ to, clientName, invoiceNumber, total, dueDate, currency, pdfBuffer, senderName, senderBusiness }) => {
+exports.sendInvoiceEmail = async ({ to, clientName, invoiceNumber, total, dueDate, currency, paymentUrl, pdfBuffer, senderName, senderBusiness }) => {
   const transporter = createTransporter();
   const formattedTotal = new Intl.NumberFormat('en-US', { style: 'currency', currency: currency || 'USD' }).format(total);
   const formattedDueDate = new Date(dueDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
@@ -19,6 +19,7 @@ exports.sendInvoiceEmail = async ({ to, clientName, invoiceNumber, total, dueDat
       .content { padding: 30px; background: #f9f9f9; }
       .invoice-box { background: white; border: 1px solid #e0e0e0; border-radius: 8px; padding: 20px; margin: 20px 0; }
       .amount { font-size: 2em; font-weight: bold; color: #4F46E5; }
+      .pay-btn { display: inline-block; margin-top: 16px; background: #0f766e; color: #fff; text-decoration: none; padding: 10px 16px; border-radius: 6px; font-weight: 600; }
       .footer { text-align: center; padding: 20px; color: #888; font-size: 0.9em; }
     </style></head>
     <body>
@@ -31,6 +32,7 @@ exports.sendInvoiceEmail = async ({ to, clientName, invoiceNumber, total, dueDat
           <p><strong>Due Date:</strong> ${formattedDueDate}</p>
           <p><strong>Amount Due:</strong></p>
           <p class="amount">${formattedTotal}</p>
+          ${paymentUrl ? `<a class="pay-btn" href="${paymentUrl}">Pay Invoice</a>` : ''}
         </div>
         <p>Thank you for your business!</p>
         <p>Best regards,<br><strong>${senderName}</strong></p>

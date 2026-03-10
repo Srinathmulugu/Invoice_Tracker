@@ -9,6 +9,23 @@ const { encryptText, decryptText } = require('../utils/encryption');
 const { calculateFraudSignals } = require('../services/detectionService');
 const { extractInvoiceFields } = require('../services/ocrService');
 
+const buildPaymentUrl = ({ provider, invoice, clientName }) => {
+  const normalizedProvider = (provider || 'upi').toLowerCase();
+  const upiId = process.env.PAYMENT_UPI_ID || 'merchant@upi';
+  const amount = Number(invoice.total || 0).toFixed(2);
+  const note = encodeURIComponent(`Invoice ${invoice.invoiceNumber}`);
+
+  let paymentUrl = `upi://pay?pa=${encodeURIComponent(upiId)}&pn=${encodeURIComponent(clientName || 'Invoice Payment')}&am=${amount}&tn=${note}`;
+  if (normalizedProvider === 'razorpay') {
+    paymentUrl = `${process.env.RAZORPAY_PAYMENT_BASE_URL || 'https://rzp.io/l/mock-payment'}/${invoice._id}`;
+  }
+  if (normalizedProvider === 'phonepe') {
+    paymentUrl = `${process.env.PHONEPE_PAYMENT_BASE_URL || 'https://phonepe.com/payment/mock'}/${invoice._id}`;
+  }
+
+  return { provider: normalizedProvider, paymentUrl };
+};
+
 const calculateTotals = (lineItems, taxRate = 0, discount = 0) => {
   const subtotal = lineItems.reduce((sum, item) => sum + item.amount, 0);
   const taxAmount = (subtotal * taxRate) / 100;
@@ -337,6 +354,7 @@ exports.sendInvoice = async (req, res) => {
       total: invoice.total,
       dueDate: invoice.dueDate,
       currency: invoice.currency,
+      paymentUrl: buildPaymentUrl({ provider: 'upi', invoice, clientName: invoice.client?.name }).paymentUrl,
       pdfBuffer,
       senderName: invoice.user.name,
       senderBusiness: invoice.user.businessName
@@ -496,22 +514,47 @@ exports.createPaymentLink = async (req, res) => {
     const invoice = await Invoice.findOne({ _id: req.params.id, user: req.user._id }).populate('client', 'name');
     if (!invoice) return res.status(404).json({ success: false, message: 'Invoice not found' });
 
-    const provider = (req.body.provider || 'upi').toLowerCase();
-    const upiId = process.env.PAYMENT_UPI_ID || 'merchant@upi';
-    const amount = Number(invoice.total || 0).toFixed(2);
-    const note = encodeURIComponent(`Invoice ${invoice.invoiceNumber}`);
-
-    let paymentUrl = `upi://pay?pa=${encodeURIComponent(upiId)}&pn=${encodeURIComponent(invoice.client?.name || 'Invoice Payment')}&am=${amount}&tn=${note}`;
-    if (provider === 'razorpay') {
-      paymentUrl = `${process.env.RAZORPAY_PAYMENT_BASE_URL || 'https://rzp.io/l/mock-payment'}/${invoice._id}`;
-    }
-    if (provider === 'phonepe') {
-      paymentUrl = `${process.env.PHONEPE_PAYMENT_BASE_URL || 'https://phonepe.com/payment/mock'}/${invoice._id}`;
-    }
+    const { provider, paymentUrl } = buildPaymentUrl({
+      provider: req.body.provider,
+      invoice,
+      clientName: invoice.client?.name
+    });
 
     res.json({ success: true, data: { provider, paymentUrl } });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+exports.handlePaymentWebhook = async (req, res) => {
+  try {
+    const secret = req.headers['x-payment-webhook-secret'];
+    const expectedSecret = process.env.PAYMENT_WEBHOOK_SECRET;
+    if (!expectedSecret || secret !== expectedSecret) {
+      return res.status(401).json({ success: false, message: 'Invalid webhook secret' });
+    }
+
+    const { invoiceId, status, amount, method, notes } = req.body || {};
+    if (!invoiceId || !status) {
+      return res.status(400).json({ success: false, message: 'invoiceId and status are required' });
+    }
+
+    const invoice = await Invoice.findById(invoiceId);
+    if (!invoice) return res.status(404).json({ success: false, message: 'Invoice not found' });
+
+    if (String(status).toLowerCase() === 'success' && invoice.status !== 'paid') {
+      invoice.status = 'paid';
+      invoice.paidAt = new Date();
+      invoice.paidAmount = Number(amount) || invoice.total;
+      invoice.paymentMethod = encryptText(method || 'gateway');
+      invoice.paymentNotes = encryptText(notes || 'Auto-updated from payment webhook');
+      await invoice.save();
+      await Client.findByIdAndUpdate(invoice.client, { $inc: { totalPaid: invoice.paidAmount } });
+    }
+
+    return res.json({ success: true, message: 'Webhook processed' });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
   }
 };
 

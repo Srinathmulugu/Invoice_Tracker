@@ -5,11 +5,13 @@ const {
   getInvoices, getInvoice, createInvoice, updateInvoice, deleteInvoice,
   sendInvoice, downloadPDF, markAsPaid, duplicateInvoice,
   checkDuplicateInvoice, exportInvoicesCsv, exportInvoicesExcel,
-  getInvoiceQrCode, createPaymentLink, scanInvoiceOcr
+  getInvoiceQrCode, createPaymentLink, scanInvoiceOcr, handlePaymentWebhook
 } = require('../controllers/invoiceController');
 const { protect, authorizeRoles } = require('../middleware/auth');
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
+
+router.post('/payment/webhook', handlePaymentWebhook);
 
 router.use(protect);
 router.get('/check-duplicate', checkDuplicateInvoice);
