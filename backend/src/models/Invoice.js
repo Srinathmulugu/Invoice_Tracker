@@ -32,7 +32,21 @@ const InvoiceSchema = new mongoose.Schema({
   paidAmount: { type: Number, default: 0 },
   paymentMethod: { type: String },
   paymentNotes: { type: String },
-  viewedAt: { type: Date }
+  bankInfo: { type: String },
+  paymentDetails: { type: String },
+  viewedAt: { type: Date },
+  duplicateWarning: { type: Boolean, default: false },
+  suspicious: { type: Boolean, default: false },
+  riskScore: { type: Number, default: 0 },
+  reminderSentAt: { type: Date },
+  recurring: {
+    enabled: { type: Boolean, default: false },
+    frequency: { type: String, enum: ['weekly', 'monthly', 'yearly'], default: 'monthly' },
+    nextRunAt: { type: Date },
+    lastRunAt: { type: Date }
+  }
 }, { timestamps: true });
+
+InvoiceSchema.index({ user: 1, invoiceNumber: 1 }, { unique: true });
 
 module.exports = mongoose.model('Invoice', InvoiceSchema);

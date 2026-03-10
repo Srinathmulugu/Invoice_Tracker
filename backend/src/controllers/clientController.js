@@ -1,5 +1,21 @@
 const Client = require('../models/Client');
 const Invoice = require('../models/Invoice');
+const { encryptText, decryptText } = require('../utils/encryption');
+
+const decryptClient = (client) => {
+  const c = client.toObject ? client.toObject() : { ...client };
+  c.email = decryptText(c.email);
+  c.bankInfo = decryptText(c.bankInfo);
+  c.paymentDetails = decryptText(c.paymentDetails);
+  return c;
+};
+
+const encryptClientFields = (payload = {}) => ({
+  ...payload,
+  ...(payload.email !== undefined ? { email: encryptText(payload.email.toLowerCase()) } : {}),
+  ...(payload.bankInfo !== undefined ? { bankInfo: encryptText(payload.bankInfo) } : {}),
+  ...(payload.paymentDetails !== undefined ? { paymentDetails: encryptText(payload.paymentDetails) } : {})
+});
 
 exports.getClients = async (req, res) => {
   try {
@@ -9,7 +25,6 @@ exports.getClients = async (req, res) => {
     if (search) {
       query.$or = [
         { name: { $regex: search, $options: 'i' } },
-        { email: { $regex: search, $options: 'i' } },
         { company: { $regex: search, $options: 'i' } }
       ];
     }
@@ -20,7 +35,13 @@ exports.getClients = async (req, res) => {
       .limit(limit * 1)
       .skip((page - 1) * limit);
 
-    res.json({ success: true, data: clients, total, pages: Math.ceil(total / limit), page: Number(page) });
+    res.json({
+      success: true,
+      data: clients.map(decryptClient),
+      total,
+      pages: Math.ceil(total / limit),
+      page: Number(page)
+    });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -35,7 +56,7 @@ exports.getClient = async (req, res) => {
       .sort({ createdAt: -1 })
       .limit(10);
 
-    res.json({ success: true, data: client, invoices });
+    res.json({ success: true, data: decryptClient(client), invoices });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -43,8 +64,8 @@ exports.getClient = async (req, res) => {
 
 exports.createClient = async (req, res) => {
   try {
-    const client = await Client.create({ ...req.body, user: req.user._id });
-    res.status(201).json({ success: true, data: client });
+    const client = await Client.create({ ...encryptClientFields(req.body), user: req.user._id });
+    res.status(201).json({ success: true, data: decryptClient(client) });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -54,11 +75,11 @@ exports.updateClient = async (req, res) => {
   try {
     const client = await Client.findOneAndUpdate(
       { _id: req.params.id, user: req.user._id },
-      req.body,
+      encryptClientFields(req.body),
       { new: true, runValidators: true }
     );
     if (!client) return res.status(404).json({ success: false, message: 'Client not found' });
-    res.json({ success: true, data: client });
+    res.json({ success: true, data: decryptClient(client) });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

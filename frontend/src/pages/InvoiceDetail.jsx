@@ -11,6 +11,8 @@ export default function InvoiceDetail() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const canManage = ['admin', 'accountant'].includes(user?.role);
+  const canDelete = user?.role === 'admin';
 
   const { data: invoice, isLoading } = useQuery({
     queryKey: ['invoice', id],
@@ -56,7 +58,7 @@ export default function InvoiceDetail() {
           <ArrowLeft size={16} /> Back
         </button>
         <div className="flex gap-2">
-          {invoice.status === 'draft' && (
+          {canManage && invoice.status === 'draft' && (
             <button onClick={() => navigate(`/invoices/${id}/edit`)} className="btn-secondary flex items-center gap-2">
               <Edit size={16} /> Edit
             </button>
@@ -64,13 +66,13 @@ export default function InvoiceDetail() {
           <button onClick={handleDownloadPDF} className="btn-secondary flex items-center gap-2">
             <Download size={16} /> PDF
           </button>
-          {(invoice.status === 'draft' || invoice.status === 'sent') && (
+          {canManage && (invoice.status === 'draft' || invoice.status === 'sent') && (
             <button onClick={() => sendMutation.mutate()} disabled={sendMutation.isPending}
               className="btn-primary flex items-center gap-2">
               <Send size={16} /> {sendMutation.isPending ? 'Sending...' : 'Send'}
             </button>
           )}
-          {invoice.status !== 'paid' && invoice.status !== 'cancelled' && (
+          {canManage && invoice.status !== 'paid' && invoice.status !== 'cancelled' && (
             <button onClick={() => markPaidMutation.mutate()}
               className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2">
               <CheckCircle size={16} /> Mark Paid
@@ -91,6 +93,9 @@ export default function InvoiceDetail() {
             <h2 className="text-4xl font-bold text-gray-200">INVOICE</h2>
             <p className="text-xl font-bold text-gray-900 mt-2">#{invoice.invoiceNumber}</p>
             <span className={`badge ${STATUS_COLORS[invoice.status]} mt-2`}>{STATUS_LABELS[invoice.status]}</span>
+            {invoice.suspicious && (
+              <p className="text-sm font-semibold text-amber-600 mt-2">Suspicious Invoice</p>
+            )}
           </div>
         </div>
 
@@ -194,7 +199,7 @@ export default function InvoiceDetail() {
         )}
       </div>
 
-      {invoice.status === 'draft' && (
+      {canDelete && invoice.status === 'draft' && (
         <div className="mt-4 text-right">
           <button
             onClick={() => { if (window.confirm('Delete this invoice?')) deleteMutation.mutate(); }}

@@ -63,6 +63,16 @@
 		box-shadow: 0 0 0 4px var(--ring);
 	}
 
+	.btn-secondary {
+		@apply inline-flex items-center justify-center rounded-xl border px-4 py-2.5 font-semibold text-slate-700 transition-colors;
+		border-color: var(--line);
+		background: #ffffff;
+	}
+
+	.btn-secondary:hover {
+		background: #f2f7f5;
+	}
+
 	.input,
 	.select,
 	input[type='text'],

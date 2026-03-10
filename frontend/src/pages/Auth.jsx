@@ -7,7 +7,7 @@ import toast from 'react-hot-toast';
 export default function Auth() {
   const [isLogin, setIsLogin] = useState(true);
   const [loading, setLoading] = useState(false);
-  const [form, setForm] = useState({ name: '', email: '', password: '', businessName: '' });
+  const [form, setForm] = useState({ name: '', email: '', password: '', businessName: '', role: 'admin' });
   const { login, register } = useAuth();
   const navigate = useNavigate();
 
@@ -54,6 +54,14 @@ export default function Auth() {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Business Name (optional)</label>
                   <input className="input" value={form.businessName} onChange={set('businessName')} placeholder="Acme Freelancing" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
+                  <select className="input" value={form.role} onChange={set('role')}>
+                    <option value="admin">Admin</option>
+                    <option value="accountant">Accountant</option>
+                    <option value="viewer">Viewer</option>
+                  </select>
                 </div>
               </>
             )}

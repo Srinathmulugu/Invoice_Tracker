@@ -10,6 +10,7 @@ const UserSchema = new mongoose.Schema({
     match: [/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/, 'Invalid email']
   },
   password: { type: String, required: [true, 'Password is required'], minlength: 6, select: false },
+  role: { type: String, enum: ['admin', 'accountant', 'viewer'], default: 'admin' },
   businessName: { type: String, trim: true },
   businessAddress: { type: String },
   phone: { type: String },

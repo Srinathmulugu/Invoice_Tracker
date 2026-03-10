@@ -24,3 +24,13 @@ exports.protect = async (req, res, next) => {
     return res.status(401).json({ success: false, message: 'Not authorized' });
   }
 };
+
+exports.authorizeRoles = (...roles) => (req, res, next) => {
+  if (!req.user || !roles.includes(req.user.role)) {
+    return res.status(403).json({
+      success: false,
+      message: `Role '${req.user?.role || 'unknown'}' is not permitted for this action`
+    });
+  }
+  next();
+};

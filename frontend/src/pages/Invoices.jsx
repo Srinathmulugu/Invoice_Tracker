@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAuth } from '../context/AuthContext';
 import api from '../utils/api';
 import { formatCurrency, formatDate, STATUS_COLORS, STATUS_LABELS } from '../utils/format';
 import { Plus, Search, Download, Send, CheckCircle, Trash2, Copy, Eye } from 'lucide-react';
@@ -10,11 +11,14 @@ const STATUSES = ['all', 'draft', 'sent', 'viewed', 'paid', 'overdue', 'cancelle
 
 export default function Invoices() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
   const status = searchParams.get('status') || 'all';
   const [page, setPage] = useState(1);
+  const canManage = ['admin', 'accountant'].includes(user?.role);
+  const canDelete = user?.role === 'admin';
 
   const { data, isLoading } = useQuery({
     queryKey: ['invoices', status, page, search],
@@ -56,7 +60,7 @@ export default function Invoices() {
     <div className="p-8">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Invoices</h1>
-        <button onClick={() => navigate('/invoices/new')} className="btn-primary flex items-center gap-2">
+        <button onClick={() => navigate('/invoices/new')} className="btn-primary flex items-center gap-2" disabled={!canManage}>
           <Plus size={18} /> New Invoice
         </button>
       </div>
@@ -105,6 +109,9 @@ export default function Invoices() {
                   <td className="px-6 py-4">
                     <button onClick={() => navigate(`/invoices/${invoice._id}`)}
                       className="font-medium text-teal-600 hover:underline">{invoice.invoiceNumber}</button>
+                    {invoice.suspicious && (
+                      <p className="text-xs font-semibold text-amber-600 mt-1">Suspicious Invoice</p>
+                    )}
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-900">{invoice.client?.name || '-'}</td>
                   <td className="px-6 py-4 text-sm text-gray-500">{formatDate(invoice.issueDate)}</td>
@@ -117,14 +124,14 @@ export default function Invoices() {
                     <div className="flex items-center gap-2">
                       <button onClick={() => navigate(`/invoices/${invoice._id}`)} className="text-gray-400 hover:text-teal-600"><Eye size={16} /></button>
                       <button onClick={() => handleDownloadPDF(invoice._id, invoice.invoiceNumber)} className="text-gray-400 hover:text-teal-600"><Download size={16} /></button>
-                      {(invoice.status === 'draft' || invoice.status === 'sent') && (
+                      {canManage && (invoice.status === 'draft' || invoice.status === 'sent') && (
                         <button onClick={() => sendMutation.mutate(invoice._id)} className="text-gray-400 hover:text-blue-600"><Send size={16} /></button>
                       )}
-                      {invoice.status !== 'paid' && invoice.status !== 'cancelled' && (
+                      {canManage && invoice.status !== 'paid' && invoice.status !== 'cancelled' && (
                         <button onClick={() => markPaidMutation.mutate(invoice._id)} className="text-gray-400 hover:text-green-600"><CheckCircle size={16} /></button>
                       )}
-                      <button onClick={() => duplicateMutation.mutate(invoice._id)} className="text-gray-400 hover:text-gray-600"><Copy size={16} /></button>
-                      {invoice.status === 'draft' && (
+                      {canManage && <button onClick={() => duplicateMutation.mutate(invoice._id)} className="text-gray-400 hover:text-gray-600"><Copy size={16} /></button>}
+                      {canDelete && invoice.status === 'draft' && (
                         <button onClick={() => { if(window.confirm('Delete?')) deleteMutation.mutate(invoice._id); }}
                           className="text-gray-400 hover:text-red-600"><Trash2 size={16} /></button>
                       )}

@@ -1,5 +1,7 @@
 const Invoice = require('../models/Invoice');
 const Client = require('../models/Client');
+const fs = require('fs/promises');
+const path = require('path');
 
 exports.getDashboardStats = async (req, res) => {
   try {
@@ -79,6 +81,75 @@ exports.getDashboardStats = async (req, res) => {
         totalClients
       }
     });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+exports.getAiInsights = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const question = String(req.query.question || '').toLowerCase();
+
+    const unpaid = await Invoice.find({ user: userId, status: { $in: ['sent', 'viewed', 'overdue'] } })
+      .populate('client', 'name')
+      .select('client total status dueDate invoiceNumber');
+
+    if (!question || question.includes('highest unpaid') || question.includes('top unpaid')) {
+      const byClient = new Map();
+      for (const inv of unpaid) {
+        const key = String(inv.client?._id || 'unknown');
+        const current = byClient.get(key) || { clientName: inv.client?.name || 'Unknown', total: 0, count: 0 };
+        current.total += inv.total || 0;
+        current.count += 1;
+        byClient.set(key, current);
+      }
+      const top = [...byClient.values()].sort((a, b) => b.total - a.total)[0];
+      const answer = top
+        ? `${top.clientName} has the highest unpaid balance (${top.count} invoices, total ${top.total.toFixed(2)}).`
+        : 'No unpaid invoices found.';
+      return res.json({ success: true, data: { question, answer } });
+    }
+
+    const overdueCount = unpaid.filter((i) => i.status === 'overdue').length;
+    const unpaidTotal = unpaid.reduce((sum, i) => sum + (i.total || 0), 0);
+    const answer = `Unpaid invoices: ${unpaid.length}. Overdue: ${overdueCount}. Total unpaid amount: ${unpaidTotal.toFixed(2)}.`;
+    res.json({ success: true, data: { question, answer } });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+exports.createCloudBackup = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const [invoices, clients] = await Promise.all([
+      Invoice.find({ user: userId }).lean(),
+      Client.find({ user: userId }).lean()
+    ]);
+
+    const payload = {
+      userId,
+      createdAt: new Date().toISOString(),
+      invoices,
+      clients
+    };
+
+    const backupDir = path.join(process.cwd(), 'backups');
+    await fs.mkdir(backupDir, { recursive: true });
+    const fileName = `backup-${userId}-${Date.now()}.json`;
+    const filePath = path.join(backupDir, fileName);
+    await fs.writeFile(filePath, JSON.stringify(payload, null, 2), 'utf8');
+
+    if (process.env.BACKUP_WEBHOOK_URL) {
+      await fetch(process.env.BACKUP_WEBHOOK_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+    }
+
+    res.json({ success: true, data: { filePath } });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

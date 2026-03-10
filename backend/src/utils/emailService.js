@@ -47,3 +47,24 @@ exports.sendInvoiceEmail = async ({ to, clientName, invoiceNumber, total, dueDat
     attachments: pdfBuffer ? [{ filename: `${invoiceNumber}.pdf`, content: pdfBuffer, contentType: 'application/pdf' }] : []
   });
 };
+
+exports.sendDueReminderEmail = async ({ to, clientName, invoiceNumber, dueDate, total, currency, senderName, senderBusiness }) => {
+  const transporter = createTransporter();
+  const formattedTotal = new Intl.NumberFormat('en-US', { style: 'currency', currency: currency || 'USD' }).format(total);
+  const formattedDueDate = new Date(dueDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+
+  await transporter.sendMail({
+    from: `"${senderBusiness || senderName}" <${process.env.EMAIL_FROM}>`,
+    to,
+    subject: `Reminder: Invoice ${invoiceNumber} due on ${formattedDueDate}`,
+    html: `
+      <div style="font-family: Arial, sans-serif; line-height:1.5; color:#1f2937;">
+        <h2 style="color:#0f766e;">Payment Reminder</h2>
+        <p>Hi ${clientName},</p>
+        <p>This is a reminder that invoice <strong>${invoiceNumber}</strong> is due on <strong>${formattedDueDate}</strong>.</p>
+        <p>Amount due: <strong>${formattedTotal}</strong></p>
+        <p>Thank you,<br/>${senderBusiness || senderName}</p>
+      </div>
+    `
+  });
+};

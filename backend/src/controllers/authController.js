@@ -9,6 +9,7 @@ const sendTokenResponse = (user, statusCode, res) => {
       id: user._id,
       name: user.name,
       email: user.email,
+      role: user.role,
       businessName: user.businessName,
       businessAddress: user.businessAddress,
       phone: user.phone,
@@ -21,8 +22,10 @@ const sendTokenResponse = (user, statusCode, res) => {
 
 exports.register = async (req, res) => {
   try {
-    const { name, email, password, businessName } = req.body;
-    const user = await User.create({ name, email, password, businessName });
+    const { name, email, password, businessName, role } = req.body;
+    const allowedRoles = ['admin', 'accountant', 'viewer'];
+    const safeRole = allowedRoles.includes(role) ? role : 'admin';
+    const user = await User.create({ name, email, password, businessName, role: safeRole });
     sendTokenResponse(user, 201, res);
   } catch (error) {
     if (error.code === 11000) {
